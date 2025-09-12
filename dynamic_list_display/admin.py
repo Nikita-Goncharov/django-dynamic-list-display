@@ -6,7 +6,7 @@ class DynamicFieldsModelAdmin(admin.ModelAdmin):
     default_fields = [
         # Model default fields
     ]
-    change_list_template = "admin/change_list_dynamic_fields.html"
+    change_list_template = "dynamic_list_display/change_list_dynamic_fields.html"
 
     @property
     def dynamic_fields_session_name(self):
