@@ -8,6 +8,7 @@ README = open(os.path.join(here, "README.md")).read()
 setup(
     name='django-dynamic-list-display',
     version='0.1',
+    include_package_data=True,
     packages=['dynamic_list_display'],
     description='A line of description',
     long_description=README,

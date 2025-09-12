@@ -17,16 +17,8 @@ A reusable Django admin mixin that allows administrators to **dynamically choose
 ## 📦 Installation
 
 ```bash
-pip install django-dynamic-list-display
+pip install git+https://github.com/Nikita-Goncharov/django-dynamic-list-display.git@master
 ````
-
-Or install directly from source:
-
-```bash
-git clone https://github.com/Nikita-Goncharov/django-dynamic-list-display.git
-cd django-dynamic-list-display
-pip install -e .
-```
 
 ---
 
