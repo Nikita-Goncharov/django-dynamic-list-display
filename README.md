@@ -1,4 +1,3 @@
-````markdown
 # django-dynamic-list-display
 
 A reusable Django admin mixin that allows administrators to **dynamically choose which fields are displayed** in the changelist view using simple checkboxes.
@@ -59,6 +58,10 @@ class MyModelAdmin(DynamicFieldsModelAdmin):
 
 ---
 
+## 🧩 How It looks like
+![Dynamic list display](dynamic-list-display.png)
+---
+
 ## 📂 Project Structure
 
 ```
@@ -66,7 +69,7 @@ dynamic_list_display/
 │
 ├── admin.py          # Contains DynamicFieldsModelAdmin
 ├── templates/
-│   └── admin/
+│   └── dynamic_list_display/
 │       └── change_list_dynamic_fields.html
 ├── __init__.py
 └── ...
