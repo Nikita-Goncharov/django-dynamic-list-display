@@ -1,6 +1,5 @@
-{% extends "admin/change_list.html" %}
-
-{% block content_title %}
-  {{ block.super }}
-  {{ custom_field_selector|safe }}
+{% extends original_template %}
+{% block content %}
+    {{ custom_field_selector|safe }}
+    {{ block.super }}
 {% endblock %}
