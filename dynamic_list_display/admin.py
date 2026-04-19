@@ -3,26 +3,26 @@ from django.contrib import admin
 from django.db import models
 from django.utils.html import format_html
 from django.core.exceptions import FieldDoesNotExist
+from django.db.models import Field
 
 class DynamicFieldsModelAdmin(admin.ModelAdmin):
     default_fields = [
         # Model default fields
     ]
     wrapper_change_list_template = "dynamic_list_display/change_list_dynamic_fields.html"
-    wrapper_change_form_template = "dynamic_list_display/change_list_dynamic_fields.html"  # for change_form template will be the same
+    wrapper_change_form_template = "dynamic_list_display/change_form_dynamic_fields.html"
 
     @property
     def dynamic_fields_session_name(self):
         return f"{self.opts.app_label}.{self.__class__.__name__}"
-
-    def _model_field_exists(self, field: str) -> bool:
+    
+    def _get_model_field_if_exists(self, field: str) -> Field | None:
         complex_field_parts = field.split("__")
         if len(complex_field_parts) == 1:
             try:
-                self.model._meta.get_field(field)
-                return True
+                return self.model._meta.get_field(field)
             except FieldDoesNotExist:
-                return False
+                return None
         else:
             related_model = None
             for index, field_part in enumerate(complex_field_parts):
@@ -34,14 +34,13 @@ class DynamicFieldsModelAdmin(admin.ModelAdmin):
                         else:
                             related_model = related_model._meta.get_field(field_part).related_model
                     except FieldDoesNotExist:
-                        return False
+                        return None
                 else:
                     # last part is normal field
                     try:
-                        related_model._meta.get_field(field_part)
-                        return True
+                        return related_model._meta.get_field(field_part)
                     except FieldDoesNotExist:
-                        return False
+                        return None
 
     def get_list_display(self, request):
         return self._get_model_selected_fields(request)
@@ -53,7 +52,7 @@ class DynamicFieldsModelAdmin(admin.ModelAdmin):
             selected_model_fields.remove("id")
         except ValueError:
             pass
-        return selected_model_fields
+        return [f for f in selected_model_fields if "__" not in f]
     
     def _get_model_selected_fields(self, request):
         if request.GET.getlist('fields'):
@@ -61,9 +60,9 @@ class DynamicFieldsModelAdmin(admin.ModelAdmin):
 
         if request.session.get(self.dynamic_fields_session_name):
             selected_fields = request.session.get(self.dynamic_fields_session_name)
-            return [field for field in selected_fields if self._model_field_exists(field)]
+            return [field for field in selected_fields if self._get_model_field_if_exists(field)]
 
-        return self.default_fields
+        return list(self.default_fields)  # allow user to use list or tuple 
 
     def _get_model_all_fields(self) -> List[str]:
         all_fields = []
@@ -89,15 +88,24 @@ class DynamicFieldsModelAdmin(admin.ModelAdmin):
             </form>
         """)
 
-    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+    @staticmethod
+    def get_nested_attr(obj, attr_path):
+        for attr in attr_path.split("__"):
+            obj = getattr(obj, attr, None)
+            if obj is None:
+                return None
+        return obj
+
+    def change_view(self, request, object_id, form_url = "", extra_context = None):
+        instance = self.model.objects.get(pk=object_id)
         if request.method != "GET":  # if action used, not just regular page load
-            return super().changeform_view(request, extra_context)
-        
+            return super().change_view(request, object_id, form_url, extra_context)
         extra_context = extra_context or {}
 
         # trigger session update before html render to show current selected checkboxes
-        self._get_model_selected_fields(request)
-        selected_fields = request.session.get(self.dynamic_fields_session_name) or self.default_fields
+        selected_fields = self._get_model_selected_fields(request)
+        related_fields = [f for f in selected_fields if "__" in f]
+
         try:
             selected_fields.remove("id")  # remove because id field cannot be shown in changeform
         except ValueError:
@@ -107,7 +115,14 @@ class DynamicFieldsModelAdmin(admin.ModelAdmin):
 
         extra_context["original_template"] = self.change_form_template or "admin/change_form.html"
         extra_context['custom_field_selector'] = self._get_checkbox_form(selected_fields, all_fields)
-        resulted_template = super().changeform_view(request, extra_context=extra_context)
+        # show selected foreign keys as readonly 
+        extra_context["related_fields"] = {}
+        for field in related_fields:
+            verbose_name = self._get_model_field_if_exists(field).verbose_name
+            value = self.get_nested_attr(instance, field)
+            extra_context["related_fields"][verbose_name] = value
+
+        resulted_template = super().change_view(request, object_id, form_url, extra_context)
         resulted_template.template_name = self.wrapper_change_form_template
         return resulted_template
 
@@ -117,7 +132,7 @@ class DynamicFieldsModelAdmin(admin.ModelAdmin):
         
         extra_context = extra_context or {}
 
-        selected_fields = request.session.get(self.dynamic_fields_session_name) or self.default_fields
+        selected_fields = self._get_model_selected_fields(request)
         all_fields = self._get_model_all_fields()
 
         extra_context["original_template"] = self.change_list_template or "admin/change_list.html"

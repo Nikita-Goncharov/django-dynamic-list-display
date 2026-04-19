@@ -1,0 +1,8 @@
+{% extends original_template %}
+{% block content %}
+    {{ custom_field_selector|safe }}
+    {% for field_label, field_value in related_fields.items %}
+        <div><b>{{ field_label }}:</b> {{ field_value }}</div>
+    {% endfor %}
+    {{ block.super }}
+{% endblock %}
