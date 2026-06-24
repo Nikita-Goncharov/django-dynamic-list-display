@@ -89,12 +89,12 @@ class DynamicFieldsModelAdmin(admin.ModelAdmin):
             for f in all_fields
         ])
 
-        return format_html(f"""
+        return format_html("""
             <form method="get" style="margin: 0 0 60px 0;">
-                {checkboxes}
+                {}
                 <button type="submit" class="button cancel-link">Apply</button>
             </form>
-        """)
+        """, checkboxes)
 
     @staticmethod
     def get_nested_attr(obj, attr_path):
