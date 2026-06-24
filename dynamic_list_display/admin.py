@@ -42,6 +42,13 @@ class DynamicFieldsModelAdmin(admin.ModelAdmin):
                     except FieldDoesNotExist:
                         return None
 
+    def _is_field_editable(self, field: str) -> bool:
+        """Check if a field is editable (can be included in form)."""
+        field_obj = self._get_model_field_if_exists(field)
+        if field_obj is None:
+            return True  # Allow unknown fields (could be properties/methods)
+        return field_obj.editable
+
     def get_list_display(self, request):
         return self._get_model_selected_fields(request)
 
@@ -52,7 +59,8 @@ class DynamicFieldsModelAdmin(admin.ModelAdmin):
             selected_model_fields.remove("id")
         except ValueError:
             pass
-        return [f for f in selected_model_fields if "__" not in f]
+        # Filter out non-editable fields (they'll be shown in readonly mode separately)
+        return [f for f in selected_model_fields if "__" not in f and self._is_field_editable(f)]
     
     def _get_model_selected_fields(self, request):
         if request.GET.getlist('fields'):
@@ -105,6 +113,7 @@ class DynamicFieldsModelAdmin(admin.ModelAdmin):
         # trigger session update before html render to show current selected checkboxes
         selected_fields = self._get_model_selected_fields(request)
         related_fields = [f for f in selected_fields if "__" in f]
+        non_editable_fields = [f for f in selected_fields if f != "id" and not self._is_field_editable(f)]
 
         try:
             selected_fields.remove("id")  # remove because id field cannot be shown in changeform
@@ -121,6 +130,14 @@ class DynamicFieldsModelAdmin(admin.ModelAdmin):
             verbose_name = self._get_model_field_if_exists(field).verbose_name
             value = self.get_nested_attr(instance, field)
             extra_context["related_fields"][verbose_name] = value
+
+        # show non-editable fields as readonly
+        extra_context["readonly_fields_data"] = {}
+        for field in non_editable_fields:
+            field_obj = self._get_model_field_if_exists(field)
+            verbose_name = field_obj.verbose_name if field_obj else field
+            value = getattr(instance, field, None)
+            extra_context["readonly_fields_data"][verbose_name] = value
 
         resulted_template = super().change_view(request, object_id, form_url, extra_context)
         resulted_template.template_name = self.wrapper_change_form_template

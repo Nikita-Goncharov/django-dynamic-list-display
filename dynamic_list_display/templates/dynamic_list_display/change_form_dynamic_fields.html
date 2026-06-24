@@ -4,5 +4,8 @@
     {% for field_label, field_value in related_fields.items %}
         <div><b>{{ field_label }}:</b> {{ field_value }}</div>
     {% endfor %}
+    {% for field_label, field_value in readonly_fields_data.items %}
+        <div><b>{{ field_label }}:</b> {{ field_value }}</div>
+    {% endfor %}
     {{ block.super }}
 {% endblock %}
