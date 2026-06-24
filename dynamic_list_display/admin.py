@@ -143,7 +143,7 @@ class DynamicFieldsModelAdmin(admin.ModelAdmin):
         resulted_template.template_name = self.wrapper_change_form_template
         return resulted_template
 
-    def changelist_view(self, request, extra_context=None, *args, **kwargs):
+    def changelist_view(self, request, extra_context=None):
         if request.method != "GET":  # if action used, not just regular page load
             return super().changelist_view(request, extra_context)
         
