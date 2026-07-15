@@ -2,6 +2,8 @@
 
 A reusable Django admin mixin that allows administrators to **dynamically choose which fields are displayed** in the changelist view using simple checkboxes.
 
+
+Django==6.0.6
 ---
 
 ## ✨ Features
